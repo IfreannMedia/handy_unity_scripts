@@ -1,20 +1,28 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 public class MainExample : MonoBehaviour
 {
 
-    private Observable<int> healthPoints;
-    // Start is called before the first frame update
+    private Observable<int> healthPoints = new Observable<int>(100);
+    private Observer<int> intObserver = new Observer<int>();
+    
     void Start()
     {
-        healthPoints.Subscribe();
+        healthPoints.Subscribe(intObserver);
+        intObserver.Next += eventHandlerMethod;
     }
 
-    // Update is called once per frame
     void Update()
     {
-        
+        if (Input.GetButtonDown("Fire1"))
+        {
+            healthPoints.value -= 10;
+        }
+    }
+
+    private void eventHandlerMethod(object sender, GenericEventArgs<int> e)
+    {
+        print("recieved health points: " + e.data);
+        // TODO healthPoints.Unsubscribe(intObserver); ERROR: InvalidOperationException: Collection was modified; enumeration operation may not execute.
     }
 }

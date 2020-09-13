@@ -1,14 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
-
 public class Observable<T> : IObservable<T>
 {
     private List<Observer<T>> observers;
-    private List<T> values;
-    public Observable()
+
+    private T _value;
+    public T value
+    {
+        get { return _value; }
+        set { _value = value; NotifyObservers(); }
+    }
+
+    public Observable(T startingData)
     {
         observers = new List<Observer<T>>();
-        values = new List<T>();
+        value = startingData;
     }
 
     public IDisposable Subscribe(IObserver<T> observer)
@@ -17,11 +23,12 @@ public class Observable<T> : IObservable<T>
         if (!observers.Contains(observer as Observer<T>))
         {
             observers.Add(observer as Observer<T>);
-            // Provide observer with existing data.
-            foreach (var item in values)
-                observer.OnNext(item);
+            observer.OnNext(_value);
+            (observer as Observer<T>).observable = this;
         }
-        return new Unsubscriber<T>(observers, observer as Observer<T>);
+        Unsubscriber<T> unsubber = new Unsubscriber<T>(observers, observer as Observer<T>);
+        (observer as Observer<T>).disposable = unsubber;
+        return unsubber;
     }
 
     public void ClearAllObservers()
@@ -34,8 +41,12 @@ public class Observable<T> : IObservable<T>
 
     public void NotifyObservers()
     {
-        foreach (var item in values)
-            observers.ForEach(obs => obs.OnNext(item));
+        observers.ForEach(obs => {
+            if(obs != null)
+            {
+                obs.OnNext(_value);
+            }
+        });
     }
 
     public void Unsubscribe(Observer<T> observer)
